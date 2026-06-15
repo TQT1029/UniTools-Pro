@@ -1,0 +1,6 @@
+{
+  "name": "UniTools Suite",
+  "description": "Bộ tiện ích kỹ thuật chuẩn thương mại tích hợp CAS 3D, phân tích văn bản N-gram, quy đổi đại lượng khoa học, công thức LaTeX, quản lí dự án và theo dõi hiệu năng Pomodoro.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

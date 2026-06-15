@@ -1,0 +1,116 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Tinh chỉnh scrollbar siêu mảnh và hiện đại */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.2);
+  border-radius: 9999px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.45);
+}
+
+/* Hiệu ứng mượt mà khi đổi theme */
+* {
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
+}
+
+/* Định nghĩa hệ màu sắc SaaS cao cấp */
+:root {
+  --bg-slate-955: #ffffff;
+  --bg-slate-905: #f8fafc;
+  --bg-slate-950: #ffffff;
+  --bg-slate-850: #f1f5f9;
+  --bg-slate-805: #ffffff;
+  --bg-slate-755: #e2e8f0;
+  --bg-slate-750: #cbd5e1;
+  --bg-slate-705: #94a3b8;
+  --bg-slate-401: #64748b;
+  --bg-slate-304: #f8fafc;
+  --bg-slate-155: #f1f5f9;
+  --bg-slate-150: #e2e8f0;
+  --bg-slate-201: #f1f5f9;
+  --bg-slate-205: #cbd5e1;
+}
+
+.dark {
+  --bg-slate-955: #020617;
+  --bg-slate-905: #030712;
+  --bg-slate-950: #090d16;
+  --bg-slate-850: #111827;
+  --bg-slate-805: #1e293b;
+  --bg-slate-755: #1f2937;
+  --bg-slate-750: #374151;
+  --bg-slate-705: #4b5563;
+  --bg-slate-401: #9ca3af;
+  --bg-slate-304: #111827;
+  --bg-slate-155: #111827;
+  --bg-slate-150: #1f2937;
+  --bg-slate-201: #1f2937;
+  --bg-slate-205: #374151;
+}
+
+@theme {
+  --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --color-slate-955: var(--bg-slate-955);
+  --color-slate-905: var(--bg-slate-905);
+  --color-slate-950: var(--bg-slate-950);
+  --color-slate-850: var(--bg-slate-850);
+  --color-slate-805: var(--bg-slate-805);
+  --color-slate-755: var(--bg-slate-755);
+  --color-slate-750: var(--bg-slate-750);
+  --color-slate-705: var(--bg-slate-705);
+  --color-slate-401: var(--bg-slate-401);
+  --color-slate-304: var(--bg-slate-304);
+  --color-slate-155: var(--bg-slate-155);
+  --color-slate-150: var(--bg-slate-150);
+  --color-slate-201: var(--bg-slate-201);
+  --color-slate-205: var(--bg-slate-205);
+}
+
+/* Chuẩn hóa các thành phần điều khiển */
+input, select, textarea {
+  background-color: var(--bg-slate-950);
+  border: 1px solid var(--bg-slate-150);
+  border-radius: 0.75rem;
+  padding: 0.625rem 0.875rem;
+  font-size: 0.8125rem;
+  color: #1e293b; /* Fix text color for light mode */
+  outline: none;
+  transition: all 150ms ease-in-out;
+}
+
+input::placeholder, select::placeholder, textarea::placeholder {
+  color: #64748b; /* slate-500 for light mode, darker for better visibility */
+  opacity: 1;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.dark select, .dark input, .dark textarea {
+  background-color: #0b0f19;
+  border-color: #1f2937;
+  color: #f3f4f6;
+}
+
+.dark input::placeholder, .dark select::placeholder, .dark textarea::placeholder {
+  color: #64748b; /* slate-500 for dark mode */
+}
+
+.dark select:focus, .dark input:focus, .dark textarea:focus {
+  border-color: #6366f1;
+}
