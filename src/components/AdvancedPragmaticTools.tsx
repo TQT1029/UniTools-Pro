@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useLocalStorage } from '../hooks/useLocalStorage';
 import { AdvancedToolGroup } from '../types';
 import {
   Wrench,
@@ -12,8 +13,8 @@ import {
 } from 'lucide-react';
 
 export default function AdvancedPragmaticTools() {
-  const [activeGroupKey, setActiveGroupKey] = useState('programmer');
-  const [activeToolKey, setActiveToolKey] = useState('json_formatter');
+  const [activeGroupKey, setActiveGroupKey] = useLocalStorage('unitools_adv_grp', 'programmer');
+  const [activeToolKey, setActiveToolKey] = useLocalStorage('unitools_adv_tool', 'json_formatter');
   const [searchQuery, setSearchQuery] = useState('');
   const [formInputs, setFormInputs] = useState<Record<string, any>>({});
   const [terminalOutput, setTerminalOutput] = useState('Sẵn sàng thực thi công cụ...');

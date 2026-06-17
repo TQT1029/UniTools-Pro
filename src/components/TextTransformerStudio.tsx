@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { TransformationRule, TextTransformationType, RuleDefinition } from '../types';
+import { useLocalStorage } from '../hooks/useLocalStorage';
 import {
   Wand2,
   Trash2,
@@ -19,20 +20,14 @@ import {
 } from 'lucide-react';
 
 export default function TextTransformerStudio() {
-  const [inputText, setInputText] = useState('');
+  const [inputText, setInputText] = useLocalStorage('unitools_txt_input', '');
   const [outputText, setOutputText] = useState('');
-  const [rules, setRules] = useState<TransformationRule[]>([
+  const [rules, setRules] = useLocalStorage<TransformationRule[]>('unitools_txt_rules', [
     { id: 'rule_1', enabled: true, type: 'normalize_spaces', value1: '', value2: '' },
     { id: 'rule_2', enabled: true, type: 'extract_emails', value1: '', value2: '' }
   ]);
   const [preset, setPreset] = useState('');
-  const [customPresets, setCustomPresets] = useState<{id: string, name: string, rules: TransformationRule[]}[]>(() => {
-    try {
-      const saved = localStorage.getItem('unitools_custom_text_filters');
-      if (saved) return JSON.parse(saved);
-    } catch (e) {}
-    return [];
-  });
+  const [customPresets, setCustomPresets] = useLocalStorage<{id: string, name: string, rules: TransformationRule[]}[]>('unitools_custom_text_filters', []);
   const [searchFilter, setSearchFilter] = useState('');
   const [showDiff, setShowDiff] = useState(false);
   const [latency, setLatency] = useState(0);
@@ -54,6 +49,7 @@ export default function TextTransformerStudio() {
     remove_multiple: { name: 'Xóa hàng loạt (mỗi dòng 1 từ)', category: 'remove', placeholder: 'com\nnet\norg' },
     remove_chars: { name: 'Xóa tập ký tự đặc biệt', category: 'remove', placeholder: 'Ví dụ: @#$%&*' },
     remove_pattern_range: { name: 'Xóa dải mẫu tuần tự (Range)', category: 'remove', placeholder: 'Mẫu: item_1..10' },
+    remove_wildcard: { name: 'Xóa mẫu theo Wildcard (%)', category: 'remove', placeholder: 'Ví dụ: [cite: %] hoặc [%]' },
     remove_domain_ext: { name: 'Xóa tên miền mở rộng (TLD)', category: 'remove', flag: true },
     remove_line_match: { name: 'Xóa cả dòng chứa từ khóa', category: 'remove', placeholder: 'Từ khóa...' },
     remove_paragraph_match: { name: 'Xóa cả đoạn chứa từ khóa', category: 'remove', placeholder: 'Từ khóa...' },
@@ -154,6 +150,15 @@ export default function TextTransformerStudio() {
                     currentText = currentText.split(`${prefix}${i}${suffix}`).join('');
                   }
                 }
+              }
+              break;
+            case 'remove_wildcard':
+              if (p1 && p1.includes('%')) {
+                try {
+                  const esc = p1.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+                  const regexStr = esc.replace(/%/g, '.*?');
+                  currentText = currentText.replace(new RegExp(regexStr, 'g'), '');
+                } catch (err) {}
               }
               break;
             case 'remove_domain_ext':
@@ -332,10 +337,6 @@ Hãy làm sạch và trích xuất dữ liệu thô này! Thông tin sản phẩ
 Vui lòng liên hệ @developer_support hoặc đăng tại thẻ #UniTools_Suite, cảm ơn.`);
   };
 
-  useEffect(() => {
-    localStorage.setItem('unitools_custom_text_filters', JSON.stringify(customPresets));
-  }, [customPresets]);
-
   const saveCurrentRulesAsPreset = () => {
     const name = window.prompt("Nhập tên bộ lọc cấu hình của bạn:");
     if (!name || name.trim() === '') return;
@@ -469,12 +470,28 @@ Vui lòng liên hệ @developer_support hoặc đăng tại thẻ #UniTools_Suit
     setTimeout(() => setIsCopied(false), 2000);
   };
 
-  const filteredRuleTypes = useMemo(() => {
+  const groupedRuleTypes = useMemo(() => {
     const filter = searchFilter.toLowerCase().trim();
-    return Object.entries(ruleRegistry).filter(([key, def]) =>
+    const filtered = Object.entries(ruleRegistry).filter(([key, def]) =>
       def.name.toLowerCase().includes(filter) || key.toLowerCase().includes(filter)
     );
+    const groups: Record<string, typeof filtered> = {};
+    filtered.forEach(item => {
+      const cat = item[1].category;
+      if (!groups[cat]) groups[cat] = [];
+      groups[cat].push(item);
+    });
+    return groups;
   }, [searchFilter]);
+
+  const categoryNames: Record<string, string> = {
+    remove: 'XÓA KÝ TỰ / CHUỖI',
+    replace: 'THAY THẾ (REPLACE)',
+    split: 'TÁCH / CẮT (SPLIT)',
+    extract: 'TRÍCH XUẤT (EXTRACT)',
+    normalize: 'CHUẨN HÓA DỮ LIỆU',
+    case: 'CHUYỂN ĐỔI CHỮ (CASE)'
+  };
 
   // Automatic pattern suggestion rules detector
   const suggestedRules = useMemo(() => {
@@ -577,7 +594,7 @@ Vui lòng liên hệ @developer_support hoặc đăng tại thẻ #UniTools_Suit
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
       {/* LEFT COLUMN: PIPELINE CONTROLLERS */}
       <div className="lg:col-span-5 flex flex-col gap-6 h-full justify-between">
-        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700/80 p-5 shadow-sm flex flex-col h-full min-h-[500px]">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700/80 p-5 shadow-sm flex flex-col h-full min-h-[600px] lg:min-h-0">
           <h3 className="text-base font-bold text-teal-600 dark:text-teal-400 border-b pb-3 mb-4 flex items-center gap-2">
             <Wand2 className="w-5 h-5 text-teal-500" /> Trình Dựng Pipeline Quy Tắc Động
           </h3>
@@ -646,7 +663,7 @@ Vui lòng liên hệ @developer_support hoặc đăng tại thẻ #UniTools_Suit
           </div>
 
           {/* Rules pipeline dynamic stack builder */}
-          <div className="flex-1 bg-slate-50/50 dark:bg-slate-900/10 border rounded-2xl p-4 flex flex-col min-h-[320px]">
+          <div className="flex-1 bg-slate-50/50 dark:bg-slate-900/10 border rounded-2xl p-4 flex flex-col min-h-[400px]">
             <div className="flex items-center justify-between border-b pb-2 mb-3">
               <span className="text-xs font-bold text-slate-500 flex items-center gap-1">
                 <Layers className="w-4 h-4 text-teal-500" /> Chuỗi Quy Tắc Xử Lý (Sequence Stack)
@@ -667,7 +684,7 @@ Vui lòng liên hệ @developer_support hoặc đăng tại thẻ #UniTools_Suit
               </div>
             </div>
 
-            <div className="flex-1 space-y-2 overflow-y-auto custom-scrollbar max-h-[310px] pr-1">
+            <div className="flex-1 space-y-2 overflow-y-auto custom-scrollbar pr-1">
               {rules.length === 0 ? (
                 <div className="text-slate-400 italic text-center py-10 text-xs">Hãy thêm các quy tắc biến đổi dọn dẹp...</div>
               ) : (
@@ -691,8 +708,12 @@ Vui lòng liên hệ @developer_support hoặc đăng tại thẻ #UniTools_Suit
                             onChange={(e) => handleRuleTypeChange(rule.id, e.target.value as any)}
                             className="bg-slate-50 dark:bg-slate-700 text-[10px] font-bold p-1 rounded-lg border border-slate-300 dark:border-slate-600/80 max-w-[170px]"
                           >
-                            {filteredRuleTypes.map(([key, def]) => (
-                              <option key={key} value={key}>{def.name}</option>
+                            {Object.entries(groupedRuleTypes).map(([cat, items]) => (
+                              <optgroup key={cat} label={categoryNames[cat] || cat.toUpperCase()}>
+                                {items.map(([key, def]) => (
+                                  <option key={key} value={key}>{def.name}</option>
+                                ))}
+                              </optgroup>
                             ))}
                           </select>
                         </div>

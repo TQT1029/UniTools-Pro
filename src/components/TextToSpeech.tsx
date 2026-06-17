@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Volume2, Play, Pause, Square, Download, Copy, Check, Info, Settings, Sparkles } from 'lucide-react';
+import { useLocalStorage } from '../hooks/useLocalStorage';
 
 const LANGUAGE_VOICES = [
   { code: 'vi-VN', langName: 'Tiếng Việt', defaultText: 'Chào mừng bạn đến với UniTools. Đây là công cụ chuyển đổi văn bản thành giọng nói chuyên nghiệp.' },
@@ -11,11 +12,11 @@ const LANGUAGE_VOICES = [
 ];
 
 export default function TextToSpeech() {
-  const [text, setText] = useState('Chào mừng bạn đến với UniTools. Đây là công cụ chuyển đổi văn bản thành giọng nói chuyên nghiệp.');
-  const [lang, setLang] = useState('vi-VN');
-  const [rate, setRate] = useState(1); // Speed: 0.5 to 2
-  const [pitch, setPitch] = useState(1); // Pitch: 0.5 to 2
-  const [volume, setVolume] = useState(1); // Volume: 0 to 1
+  const [text, setText] = useLocalStorage('unitools_tts_text', 'Chào mừng bạn đến với UniTools. Đây là công cụ chuyển đổi văn bản thành giọng nói chuyên nghiệp.');
+  const [lang, setLang] = useLocalStorage('unitools_tts_lang', 'vi-VN');
+  const [rate, setRate] = useLocalStorage('unitools_tts_rate', 1); // Speed: 0.5 to 2
+  const [pitch, setPitch] = useLocalStorage('unitools_tts_pitch', 1); // Pitch: 0.5 to 2
+  const [volume, setVolume] = useLocalStorage('unitools_tts_vol', 1); // Volume: 0 to 1
 
   // Native Web Speech voices
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);

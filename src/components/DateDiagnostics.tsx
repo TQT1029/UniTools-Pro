@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Sliders, History, CalendarClock, Globe, Clock, Sparkles, RefreshCw } from 'lucide-react';
+import { useLocalStorage } from '../hooks/useLocalStorage';
+import { Calendar, Clock, RotateCcw, AlertTriangle, PartyPopper, CalendarDays, Activity } from 'lucide-react';
 
 const SUB_TABS = [
   { id: 'distance_offset', name: 'Mốc Ngày & Tịnh Tiến' },
@@ -8,22 +9,22 @@ const SUB_TABS = [
 ];
 
 export default function DateDiagnostics() {
-  const [activeTab, setActiveTab] = useState('distance_offset');
+  const [activeTab, setActiveTab] = useLocalStorage('unitools_date_tab', 'distance_offset');
 
-  // Tab 1 States
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [baseDate, setBaseDate] = useState('');
-  const [offsetDays, setOffsetDays] = useState(30);
+  // Core Variables
+  const [startDate, setStartDate] = useLocalStorage('unitools_date_start', '');
+  const [endDate, setEndDate] = useLocalStorage('unitools_date_end', '');
+  const [baseDate, setBaseDate] = useLocalStorage('unitools_date_base', '');
+  const [offsetDays, setOffsetDays] = useLocalStorage('unitools_date_offset', 30);
   const [diffReport, setDiffReport] = useState('Vui lòng chọn hoặc nhập ngày mốc khởi điểm...');
   const [offsetReport, setOffsetReport] = useState('Vui lòng nhập độ lệch hoặc click để tịnh tiến...');
 
   // Manual fast input helpers
-  const [manualStart, setManualStart] = useState('');
-  const [manualEnd, setManualEnd] = useState('');
+  const [manualStart, setManualStart] = useLocalStorage('unitools_date_mstart', '');
+  const [manualEnd, setManualEnd] = useLocalStorage('unitools_date_mend', '');
 
   // Tab 2 States (Age & Zodiac)
-  const [birthDate, setBirthDate] = useState('1998-01-15');
+  const [birthDate, setBirthDate] = useLocalStorage('unitools_date_birth', '1998-01-15');
   const [ageProfile, setAgeProfile] = useState<any>(null);
   const [zodiacProfile, setZodiacProfile] = useState<any>(null);
 

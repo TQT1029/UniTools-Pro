@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { create, all } from 'mathjs';
+import { useLocalStorage } from '../hooks/useLocalStorage';
 import katex from 'katex';
 import { MathFunction } from '../types';
 import { Calculator, Play, RotateCcw, Copy, Check, Eye, EyeOff, Trash2, Plus } from 'lucide-react';
@@ -11,15 +12,15 @@ interface MathCASGrapherProps {
 }
 
 export default function MathCASGrapher({ onFormulaSelect }: MathCASGrapherProps) {
-  const [rawInput, setRawInput] = useState('x^2 - 5x + 6');
+  const [rawInput, setRawInput] = useLocalStorage('unitools_math_input', 'x^2 - 5x + 6');
   const [terminalOutput, setTerminalOutput] = useState('Hệ thống CAS/Đồ thị sẵn sàng...');
   const [isCopied, setIsCopied] = useState(false);
-  const [graphMode, setGraphMode] = useState<'2d' | '3d'>('2d');
+  const [graphMode, setGraphMode] = useLocalStorage<'2d' | '3d'>('unitools_math_mode', '2d');
   
   const [domainX, setDomainX] = useState<[number, number]>([-8, 8]);
   const [domainY, setDomainY] = useState<[number, number]>([-8, 8]);
 
-  const [functions, setFunctions] = useState<MathFunction[]>([
+  const [functions, setFunctions] = useLocalStorage<MathFunction[]>('unitools_math_funcs', [
     { id: 'f1', expr: 'x^2 - 2', color: '#6366f1', visible: true },
     { id: 'f2', expr: 'sin(x) * 3', color: '#10b981', visible: true },
     { id: 'f3', expr: 'cos(x)^2', color: '#f43f5e', visible: false }
@@ -45,7 +46,7 @@ export default function MathCASGrapher({ onFormulaSelect }: MathCASGrapherProps)
   const isDragging3D = useRef(false);
   const isPanning3D = useRef(false);
   const lastMousePos3D = useRef({ x: 0, y: 0 });
-  const [scale3D, setScale3D] = useState(16);
+  const [scale3D, setScale3D] = useLocalStorage('unitools_math_scale3d', 16);
   const [pan3D, setPan3D] = useState({ x: 0, y: 0 });
 
   const keyboardSchema = {
@@ -154,19 +155,34 @@ export default function MathCASGrapher({ onFormulaSelect }: MathCASGrapherProps)
   };
 
   const compiledFuncs = useMemo(() => {
-    const result: { id: string, color: string, fn: math.EvalFunction }[] = [];
+    const result: { id: string, color: string, fn: math.EvalFunction, isImplicit: boolean }[] = [];
     functions.forEach(f => {
       if (!f.visible) return;
-      try { result.push({ id: f.id, color: f.color, fn: math.compile(f.expr) }); } catch(e) {}
+      let exprToCompile = f.expr;
+      let isImplicit = false;
+      if (f.expr.includes('=')) {
+        const [lhs, rhs] = f.expr.split('=');
+        exprToCompile = `${lhs} - (${rhs})`;
+        isImplicit = true;
+      }
+      try { result.push({ id: f.id, color: f.color, fn: math.compile(exprToCompile), isImplicit }); } catch(e) {}
     });
     return result;
   }, [functions]);
 
   const compiledInput = useMemo(() => {
-    if (rawInput.trim() && !rawInput.includes('y')) {
-      try { return math.compile(rawInput); } catch(e) {}
+    let exprToCompile = rawInput.trim();
+    if (!exprToCompile) return null;
+    let isImplicit = false;
+    if (exprToCompile.includes('=')) {
+      const [lhs, rhs] = exprToCompile.split('=');
+      exprToCompile = `${lhs} - (${rhs})`;
+      isImplicit = true;
     }
-    return null;
+    // Only skip if no y but it's not implicit. Implicit can have just x and y or x or y
+    try { 
+      return { fn: math.compile(exprToCompile), isImplicit };
+    } catch(e) { return null; }
   }, [rawInput]);
 
   const draw2DGraph = () => {
@@ -250,26 +266,64 @@ export default function MathCASGrapher({ onFormulaSelect }: MathCASGrapherProps)
     ctx.stroke();
 
     // Draw Functions
-    const renderFunction = (fn: math.EvalFunction, color: string) => {
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 2.5;
-      ctx.beginPath();
-      let first = true;
-      for (let px = 0; px <= width; px += 2) {
-        const x = minX + (px / width) * (maxX - minX);
-        try {
-          const y = fn.evaluate({ x });
-          if (typeof y === 'number' && isFinite(y)) {
-            const py = mapY(y);
-            if (first || py < 0 || py > height) { ctx.moveTo(px, py); first = false; }
-            else { ctx.lineTo(px, py); }
-          } else { first = true; }
-        } catch(e) { first = true; }
+    const renderFunction = (fnData: {fn: math.EvalFunction, isImplicit: boolean}, color: string) => {
+      const { fn, isImplicit } = fnData;
+      if (isImplicit) {
+        // Marching Squares for Implicit Equations
+        const res = 2; // pixel block size
+        const cols = Math.ceil(width / res);
+        const rows = Math.ceil(height / res);
+        const values = new Float32Array((cols + 1) * (rows + 1));
+        
+        for (let r = 0; r <= rows; r++) {
+          const y = maxY - (r / rows) * (maxY - minY); // inverse mapY
+          for (let c = 0; c <= cols; c++) {
+            const x = minX + (c / cols) * (maxX - minX); // inverse mapX
+            try {
+              values[r * (cols + 1) + c] = fn.evaluate({ x, y, z: 0 });
+            } catch(e) { 
+              values[r * (cols + 1) + c] = 1; // dummy non-zero
+            }
+          }
+        }
+        
+        ctx.fillStyle = color;
+        for (let r = 0; r < rows; r++) {
+          for (let c = 0; c < cols; c++) {
+             const v0 = values[r * (cols + 1) + c];
+             const v1 = values[r * (cols + 1) + c + 1];
+             const v2 = values[(r + 1) * (cols + 1) + c];
+             const v3 = values[(r + 1) * (cols + 1) + c + 1];
+             
+             // If not all signs are the same, there's a zero crossing
+             const s0 = v0 > 0;
+             if (s0 !== (v1 > 0) || s0 !== (v2 > 0) || s0 !== (v3 > 0)) {
+                ctx.fillRect(c * res, r * res, res, res);
+             }
+          }
+        }
+      } else {
+        // Explicit 2D Plotting (y = f(x))
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        let first = true;
+        for (let px = 0; px <= width; px += 2) {
+          const x = minX + (px / width) * (maxX - minX);
+          try {
+            const y = fn.evaluate({ x });
+            if (typeof y === 'number' && isFinite(y)) {
+              const py = mapY(y);
+              if (first || py < -height || py > height * 2) { ctx.moveTo(px, py); first = false; }
+              else { ctx.lineTo(px, py); }
+            } else { first = true; }
+          } catch(e) { first = true; }
+        }
+        ctx.stroke();
       }
-      ctx.stroke();
     };
 
-    compiledFuncs.forEach(cf => renderFunction(cf.fn, cf.color));
+    compiledFuncs.forEach(cf => renderFunction({ fn: cf.fn, isImplicit: cf.isImplicit }, cf.color));
     if (compiledInput) renderFunction(compiledInput, '#6366f1');
   };
 
@@ -380,7 +434,7 @@ export default function MathCASGrapher({ onFormulaSelect }: MathCASGrapherProps)
     ctx.clearRect(0, 0, width, height);
 
     let compiled3D: math.EvalFunction | null = null;
-    let textToCompile = rawInput;
+    let textToCompile = rawInput.trim();
     if (!textToCompile && functions[0]) {
       textToCompile = functions[0].expr;
     }
@@ -388,11 +442,20 @@ export default function MathCASGrapher({ onFormulaSelect }: MathCASGrapherProps)
       textToCompile = 'x^2 - y^2';
     }
 
+    let isImplicit3D = false;
+    let expr3D = textToCompile;
+    if (textToCompile.includes('=')) {
+       const [lhs, rhs] = textToCompile.split('=');
+       expr3D = `${lhs} - (${rhs})`;
+       isImplicit3D = true;
+    }
+
     try {
-      compiled3D = math.compile(textToCompile);
+      compiled3D = math.compile(expr3D);
     } catch (e) {
       try {
         compiled3D = math.compile('x^2 - y^2');
+        isImplicit3D = false;
       } catch (err) {}
     }
 
@@ -411,7 +474,8 @@ export default function MathCASGrapher({ onFormulaSelect }: MathCASGrapherProps)
 
       return {
         x: width / 2 + pan3D.x + x2 * scale3D,
-        y: height / 2 + pan3D.y - z1 * scale3D
+        y: height / 2 + pan3D.y - z1 * scale3D,
+        depth: z1
       };
     };
 
@@ -453,41 +517,94 @@ export default function MathCASGrapher({ onFormulaSelect }: MathCASGrapherProps)
     drawAxis(0, 0, size + 1.5, '#3b82f6', 'Z');
     // --- Kết thúc Vẽ các Trục Tọa Độ ---
 
-    ctx.strokeStyle = 'rgba(99, 102, 241, 0.4)';
-    ctx.lineWidth = 1;
-
-    for (let i = 0; i <= steps; i++) {
-      const x = -size + i * stepSize;
-      ctx.beginPath();
-      for (let j = 0; j <= steps; j++) {
-        const y = -size + j * stepSize;
-        try {
-          const z = Number(compiled3D.evaluate({ x, y })) * 0.4;
-          if (isFinite(z) && !isNaN(z)) {
-            const pt = project(x, y, z);
-            if (j === 0) ctx.moveTo(pt.x, pt.y);
-            else ctx.lineTo(pt.x, pt.y);
+    if (isImplicit3D) {
+      const pts: {x: number, y: number, depth: number}[] = [];
+      const steps3D = 30; // Voxel resolution
+      const res3D = (size * 2) / steps3D;
+      
+      const vals = new Float32Array((steps3D+1)*(steps3D+1)*(steps3D+1));
+      const getIdx = (ix: number, iy: number, iz: number) => ix + iy*(steps3D+1) + iz*(steps3D+1)*(steps3D+1);
+      
+      // Compute 3D scalar field
+      for(let ix=0; ix<=steps3D; ix++) {
+        const x = -size + ix*res3D;
+        for(let iy=0; iy<=steps3D; iy++) {
+          const y = -size + iy*res3D;
+          for(let iz=0; iz<=steps3D; iz++) {
+            const z = -size + iz*res3D;
+            try {
+               vals[getIdx(ix, iy, iz)] = compiled3D.evaluate({x, y, z});
+            } catch(e) { vals[getIdx(ix, iy, iz)] = 1; }
           }
-        } catch (e) {}
+        }
       }
-      ctx.stroke();
-    }
+      
+      // Marching cubes point cloud surface detection
+      for(let ix=0; ix<steps3D; ix++) {
+        const x = -size + ix*res3D + res3D/2;
+        for(let iy=0; iy<steps3D; iy++) {
+          const y = -size + iy*res3D + res3D/2;
+          for(let iz=0; iz<steps3D; iz++) {
+            const z = -size + iz*res3D + res3D/2;
+            const v0 = vals[getIdx(ix, iy, iz)];
+            const v1 = vals[getIdx(ix+1, iy, iz)];
+            const v2 = vals[getIdx(ix, iy+1, iz)];
+            const v3 = vals[getIdx(ix, iy, iz+1)];
+            
+            const s0 = v0 > 0;
+            if (s0 !== (v1>0) || s0 !== (v2>0) || s0 !== (v3>0)) {
+               pts.push(project(x, y, z));
+            }
+          }
+        }
+      }
+      
+      // Painter's algorithm
+      pts.sort((a,b) => a.depth - b.depth); 
+      
+      ctx.fillStyle = 'rgba(99, 102, 241, 0.7)';
+      pts.forEach(p => {
+         ctx.beginPath();
+         ctx.arc(p.x, p.y, 1.5, 0, Math.PI*2);
+         ctx.fill();
+      });
+    } else {
+      ctx.strokeStyle = 'rgba(99, 102, 241, 0.4)';
+      ctx.lineWidth = 1;
 
-    for (let j = 0; j <= steps; j++) {
-      const y = -size + j * stepSize;
-      ctx.beginPath();
       for (let i = 0; i <= steps; i++) {
         const x = -size + i * stepSize;
-        try {
-          const z = Number(compiled3D.evaluate({ x, y })) * 0.4;
-          if (isFinite(z) && !isNaN(z)) {
-            const pt = project(x, y, z);
-            if (i === 0) ctx.moveTo(pt.x, pt.y);
-            else ctx.lineTo(pt.x, pt.y);
-          }
-        } catch (e) {}
+        ctx.beginPath();
+        for (let j = 0; j <= steps; j++) {
+          const y = -size + j * stepSize;
+          try {
+            const z = Number(compiled3D.evaluate({ x, y })) * 0.4;
+            if (isFinite(z) && !isNaN(z)) {
+              const pt = project(x, y, z);
+              if (j === 0) ctx.moveTo(pt.x, pt.y);
+              else ctx.lineTo(pt.x, pt.y);
+            }
+          } catch (e) {}
+        }
+        ctx.stroke();
       }
-      ctx.stroke();
+
+      for (let j = 0; j <= steps; j++) {
+        const y = -size + j * stepSize;
+        ctx.beginPath();
+        for (let i = 0; i <= steps; i++) {
+          const x = -size + i * stepSize;
+          try {
+            const z = Number(compiled3D.evaluate({ x, y })) * 0.4;
+            if (isFinite(z) && !isNaN(z)) {
+              const pt = project(x, y, z);
+              if (i === 0) ctx.moveTo(pt.x, pt.y);
+              else ctx.lineTo(pt.x, pt.y);
+            }
+          } catch (e) {}
+        }
+        ctx.stroke();
+      }
     }
   };
 

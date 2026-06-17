@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
+import { useLocalStorage } from "../hooks/useLocalStorage";
 import {
   BarChart,
   Bar,
@@ -31,9 +32,9 @@ import {
 } from "lucide-react";
 
 export default function CountWordPro() {
-  const [inputText, setTextareaValue] = useState("");
-  const [freqLimit, setFreqLimit] = useState(15);
-  const [excludeStopWords, setExcludeStopWords] = useState(true);
+  const [inputText, setTextareaValue] = useLocalStorage("unitools_cwp_input", "");
+  const [freqLimit, setFreqLimit] = useLocalStorage("unitools_cwp_limit", 15);
+  const [excludeStopWords, setExcludeStopWords] = useLocalStorage("unitools_cwp_exclude", true);
   const [activeSubTab, setActiveSubTab] = useState<
     "freq" | "seo" | "struct" | "ai"
   >("freq");

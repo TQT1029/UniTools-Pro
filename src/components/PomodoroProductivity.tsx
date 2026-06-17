@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import { useLocalStorage } from '../hooks/useLocalStorage';
 import { Sliders, Timer, Play, Pause, RotateCcw, HeartPulse, Plus, Trash2, Edit2, Check, CheckSquare, Square, Flame } from 'lucide-react';
 
 interface PomodoroTask {
@@ -11,9 +12,9 @@ interface PomodoroTask {
 }
 
 export default function PomodoroProductivity() {
-  const [focusTime, setFocusTime] = useState(25);
-  const [shortTime, setShortTime] = useState(5);
-  const [longTime, setLongTime] = useState(15);
+  const [focusTime, setFocusTime] = useLocalStorage('unitools_pomodoro_focus_time', 25);
+  const [shortTime, setShortTime] = useLocalStorage('unitools_pomodoro_short_time', 5);
+  const [longTime, setLongTime] = useLocalStorage('unitools_pomodoro_long_time', 15);
 
   const [currentMode, setCurrentMode] = useState<'focus' | 'shortBreak' | 'longBreak'>('focus');
   const [timeLeft, setTimeLeft] = useState(25 * 60);
@@ -26,37 +27,16 @@ export default function PomodoroProductivity() {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Todo-List integration state
-  const [tasks, setTasks] = useState<PomodoroTask[]>(() => {
-    try {
-      const saved = localStorage.getItem('unitools_pomodoro_tasks');
-      if (saved) return JSON.parse(saved);
-    } catch (e) {}
-    return [
-      { id: '1', title: 'Giải bài tập logic toán học', completed: false, notes: 'Hoàn thành chương 1', pomodoros: 1 },
-      { id: '2', title: 'Nghiên cứu tài liệu vi tích phân', completed: false, notes: 'Đọc phương trình vi phân', pomodoros: 0 }
-    ];
-  });
-  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(() => {
-    return localStorage.getItem('unitools_pomodoro_active_task');
-  });
+  const [tasks, setTasks] = useLocalStorage<PomodoroTask[]>('unitools_pomodoro_tasks', [
+    { id: '1', title: 'Giải bài tập logic toán học', completed: false, notes: 'Hoàn thành chương 1', pomodoros: 1 },
+    { id: '2', title: 'Nghiên cứu tài liệu vi tích phân', completed: false, notes: 'Đọc phương trình vi phân', pomodoros: 0 }
+  ]);
+  const [selectedTaskId, setSelectedTaskId] = useLocalStorage<string | null>('unitools_pomodoro_active_task', null);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskNotes, setNewTaskNotes] = useState('');
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState('');
   const [editingNotes, setEditingNotes] = useState('');
-
-  // Persist Tasks
-  useEffect(() => {
-    localStorage.setItem('unitools_pomodoro_tasks', JSON.stringify(tasks));
-  }, [tasks]);
-
-  useEffect(() => {
-    if (selectedTaskId) {
-      localStorage.setItem('unitools_pomodoro_active_task', selectedTaskId);
-    } else {
-      localStorage.removeItem('unitools_pomodoro_active_task');
-    }
-  }, [selectedTaskId]);
 
   // Apply new cycle setup
   const applyCycleSetup = () => {

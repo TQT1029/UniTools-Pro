@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useLocalStorage } from '../hooks/useLocalStorage';
 import { MathTypeSymbol } from '../types';
 import {
   Keyboard,
@@ -18,7 +19,7 @@ export default function MathTypeWYSIWYG() {
   const [searchQuery, setSearchQuery] = useState('');
   const [outputView, setOutputView] = useState<'latex' | 'mathml' | 'unicodemath'>('latex');
   const [zoom, setZoom] = useState(100);
-  const [mirrorValue, setMirrorValue] = useState('');
+  const [mirrorValue, setMirrorValue] = useLocalStorage('unitools_math_wysiwyg', '');
   const [isCopied, setIsCopied] = useState(false);
 
   // Modal Matrix properties

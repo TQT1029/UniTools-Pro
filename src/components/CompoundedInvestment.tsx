@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocalStorage } from '../hooks/useLocalStorage';
 import {
 BarChart,
 Bar,
@@ -19,26 +20,26 @@ const FINANCIAL_SUB_TABS = [
 { id: 'roi_cagr', name: 'Định Lượng ROI & CAGR' }
 ];
 export default function CompoundedInvestment() {
-const [activeSubTab, setActiveSubTab] = useState('compound');
+const [activeSubTab, setActiveSubTab] = useLocalStorage('unitools_invest_tab', 'compound');
 // Tab 1: Compound & DCA States
-const [principal, setPrincipal] = useState(50000000);
-const [contribution, setContribution] = useState(24000000); // 2tr / thang
+const [principal, setPrincipal] = useLocalStorage('unitools_invest_cp', 50000000);
+const [contribution, setContribution] = useLocalStorage('unitools_invest_cc', 24000000); // 2tr / thang
 const [contribFreq, setContribFreq] = useState<'yearly' | 'monthly'>('yearly');
-const [rate, setRate] = useState(8.5);
-const [years, setYears] = useState(10);
+const [rate, setRate] = useLocalStorage('unitools_invest_cr', 8.5);
+const [years, setYears] = useLocalStorage('unitools_invest_cy', 10);
 // Tab 2: Simple Interest States
-const [simplePrincipal, setSimplePrincipal] = useState(50000000);
-const [simpleRate, setSimpleRate] = useState(7.0);
-const [simpleYears, setSimpleYears] = useState(10);
+const [simplePrincipal, setSimplePrincipal] = useLocalStorage('unitools_invest_sp', 50000000);
+const [simpleRate, setSimpleRate] = useLocalStorage('unitools_invest_sr', 7.0);
+const [simpleYears, setSimpleYears] = useLocalStorage('unitools_invest_sy', 10);
 // Tab 3: PV / FV States
 const [pvFvDirection, setPvFvDirection] = useState<'pv2fv' | 'fv2pv'>('pv2fv');
-const [pvFvValue, setPvFvValue] = useState(100000000);
-const [pvFvDiscountRate, setPvFvDiscountRate] = useState(6.0); // Inflation rate or index
-const [pvFvYears, setPvFvYears] = useState(10);
+const [pvFvValue, setPvFvValue] = useLocalStorage('unitools_invest_pv', 100000000);
+const [pvFvDiscountRate, setPvFvDiscountRate] = useLocalStorage('unitools_invest_pv_r', 6.0); // Inflation rate or index
+const [pvFvYears, setPvFvYears] = useLocalStorage('unitools_invest_pv_y', 10);
 // Tab 4: ROI / CAGR States
-const [initialValue, setInitialValue] = useState(50000000);
-const [finalValue, setFinalValue] = useState(150000000);
-const [roiCagrYears, setRoiCagrYears] = useState(5);
+const [initialValue, setInitialValue] = useLocalStorage('unitools_invest_cagr_iv', 50000000);
+const [finalValue, setFinalValue] = useLocalStorage('unitools_invest_cagr_fv', 150000000);
+const [roiCagrYears, setRoiCagrYears] = useLocalStorage('unitools_invest_cagr_y', 5);
 // Output variables
 const [report, setReport] = useState('');
 const [chartData, setChartData] = useState<any[]>([]);

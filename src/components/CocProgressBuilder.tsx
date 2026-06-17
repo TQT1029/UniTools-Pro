@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocalStorage } from '../hooks/useLocalStorage';
 import { CocPotion } from '../types';
 import {
   LineChart,
@@ -12,17 +13,17 @@ import {
 import { Sliders, Plus, Trash2, ShieldAlert, Sparkles, TrendingDown } from 'lucide-react';
 
 export default function CocProgressBuilder() {
-  const [days, setDays] = useState(10);
-  const [hours, setHours] = useState(0);
-  const [minutes, setMinutes] = useState(0);
+  const [days, setDays] = useLocalStorage('unitools_coc_d', 10);
+  const [hours, setHours] = useLocalStorage('unitools_coc_h', 0);
+  const [minutes, setMinutes] = useLocalStorage('unitools_coc_m', 0);
 
   const [buffQueue, setBuffQueue] = useState<CocPotion[]>([
     { name: 'Builder Potion x10', multiplier: 10, duration: 1 }
   ]);
 
-  const [potName, setPotName] = useState('Builder Potion x10');
-  const [potMult, setPotMult] = useState(10);
-  const [potDur, setPotDur] = useState(1);
+  const [potName, setPotName] = useLocalStorage('unitools_coc_pn', 'Builder Potion x10');
+  const [potMult, setPotMult] = useLocalStorage('unitools_coc_pm', 10);
+  const [potDur, setPotDur] = useLocalStorage('unitools_coc_pd', 1);
   const [report, setReport] = useState('');
   const [chartData, setChartData] = useState<any[]>([]);
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useLocalStorage } from '../hooks/useLocalStorage';
 import { UnitConverterCategory } from '../types';
 import {
   BarChart,
@@ -25,10 +26,10 @@ import {
 
 export default function UniversalConverter() {
   const [category, setCategory] = useState<string>('Độ dài');
-  const [searchInp, setSearchInp] = useState('');
-  const [fromUnit, setFromUnit] = useState('');
-  const [toUnit, setToUnit] = useState('');
-  const [valInp, setValInp] = useState(1.0);
+  const [searchInp, setSearchInp] = useLocalStorage('unitools_conv_search', '');
+  const [fromUnit, setFromUnit] = useLocalStorage('unitools_conv_from', '');
+  const [toUnit, setToUnit] = useLocalStorage('unitools_conv_to', '');
+  const [valInp, setValInp] = useLocalStorage('unitools_conv_val', 1.0);
   const [resultText, setResultText] = useState('0');
   const [chartStyle, setChartStyle] = useState<'bar' | 'line'>('bar');
   const [history, setHistory] = useState<string[]>([]);

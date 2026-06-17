@@ -99,6 +99,7 @@ export type TextTransformationType =
   | 'remove_multiple'
   | 'remove_chars'
   | 'remove_pattern_range'
+  | 'remove_wildcard'
   | 'remove_domain_ext'
   | 'remove_line_match'
   | 'remove_paragraph_match'

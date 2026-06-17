@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Languages, Copy, Check, Sparkles, RefreshCw, AlertCircle, HelpCircle } from 'lucide-react';
+import { useLocalStorage } from '../hooks/useLocalStorage';
 
 const SUPPORTED_LANGUAGES = [
   { code: 'auto', name: 'Tự động phát hiện ngôn ngữ' },
@@ -15,13 +16,13 @@ const SUPPORTED_LANGUAGES = [
 ];
 
 export default function TranslationTool() {
-  const [sourceLang, setSourceLang] = useState('auto');
-  const [targetLang, setTargetLang] = useState('en');
-  const [sourceText, setSourceText] = useState('');
+  const [sourceLang, setSourceLang] = useLocalStorage('unitools_trans_src_lang', 'auto');
+  const [targetLang, setTargetLang] = useLocalStorage('unitools_trans_tgt_lang', 'en');
+  const [sourceText, setSourceText] = useLocalStorage('unitools_trans_src_text', '');
   const [translatedText, setTranslatedText] = useState('');
   const [isTranslating, setIsTranslating] = useState(false);
   const [engine, setEngine] = useState<'google' | 'microsoft'>('google');
-  const [msApiKey, setMsApiKey] = useState('');
+  const [msApiKey, setMsApiKey] = useLocalStorage('unitools_trans_api_key', '');
   const [isCopied, setIsCopied] = useState(false);
   const [detectedLang, setDetectedLang] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
